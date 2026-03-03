@@ -19,7 +19,7 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN pnpm --filter web build
+RUN pnpm install --frozen-lockfile && pnpm --filter web build
 
 FROM base AS runner
 WORKDIR /app
