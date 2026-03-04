@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { useTripStore } from '@/entities/trip/model/trip.store'
+import { usePointCrud } from '@/features/route-create'
 import { RouteBuilder } from '@/widgets/route-builder'
 
 // RouteMap грузим динамически — Yandex Maps несовместима с SSR
@@ -19,13 +20,14 @@ function MapSkeleton() {
 }
 
 export function PlannerPage() {
-  const { points, removePoint } = useTripStore()
+  const { points, currentTrip } = useTripStore()
+  const { add, remove } = usePointCrud(currentTrip?.id)
 
   return (
     <div className="flex h-full gap-4 p-4">
       {/* Левая панель — список точек */}
       <aside className="w-80 shrink-0 bg-brand-light rounded-2xl p-4 overflow-hidden flex flex-col">
-        <RouteBuilder points={points} onDelete={removePoint} />
+        <RouteBuilder points={points} onDelete={remove} onAdd={add} />
       </aside>
 
       {/* Правая панель — карта */}

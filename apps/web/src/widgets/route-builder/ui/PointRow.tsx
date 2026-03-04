@@ -5,7 +5,7 @@ import type { RoutePoint } from '@/entities/route-point/model/route-point.types'
 interface PointRowProps {
   point: RoutePoint
   index: number
-  onDelete: (id: string) => void
+  onDelete: (id: string) => Promise<void>
 }
 
 export function PointRow({ point, index, onDelete }: PointRowProps) {
