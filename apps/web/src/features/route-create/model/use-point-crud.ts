@@ -6,7 +6,7 @@ import { pointsApi } from '@/entities/route-point'
 import type { CreatePointPayload } from '@/entities/route-point'
 
 export function usePointCrud(tripId: string | undefined) {
-  const { setPoints, addPoint, removePoint } = useTripStore()
+  const { setPoints, addPoint, removePoint, reorderPoints } = useTripStore()
   const loadedTripId = useRef<string | null>(null)
 
   // Загружаем точки при смене tripId
@@ -36,5 +36,14 @@ export function usePointCrud(tripId: string | undefined) {
     [tripId, removePoint],
   )
 
-  return { add, remove }
+  const reorder = useCallback(
+    async (orderedIds: string[]) => {
+      if (!tripId) return
+      reorderPoints(orderedIds) // optimistic update
+      await pointsApi.reorder(tripId, orderedIds)
+    },
+    [tripId, reorderPoints],
+  )
+
+  return { add, remove, reorder }
 }

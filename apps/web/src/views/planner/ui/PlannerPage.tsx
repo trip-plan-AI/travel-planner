@@ -21,13 +21,13 @@ function MapSkeleton() {
 
 export function PlannerPage() {
   const { points, currentTrip } = useTripStore()
-  const { add, remove } = usePointCrud(currentTrip?.id)
+  const { add, remove, reorder } = usePointCrud(currentTrip?.id)
 
   return (
     <div className="flex h-full gap-4 p-4">
       {/* Левая панель — список точек */}
       <aside className="w-80 shrink-0 bg-brand-light rounded-2xl p-4 overflow-hidden flex flex-col">
-        <RouteBuilder points={points} onDelete={remove} onAdd={add} />
+        <RouteBuilder points={points} onDelete={remove} onAdd={add} onReorder={reorder} />
       </aside>
 
       {/* Правая панель — карта */}
