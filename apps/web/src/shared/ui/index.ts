@@ -1,6 +1,6 @@
-export { Button, buttonVariants } from './button'
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from './card'
-export { Input } from './input'
+export { Button, buttonVariants } from './button';
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from './card';
+export { Input } from './input';
 export {
   Dialog,
   DialogPortal,
@@ -12,8 +12,8 @@ export {
   DialogFooter,
   DialogTitle,
   DialogDescription,
-} from './dialog'
-export { Badge, badgeVariants } from './badge'
+} from './dialog';
+export { Badge, badgeVariants } from './badge';
 export {
   Sheet,
   SheetPortal,
@@ -25,7 +25,7 @@ export {
   SheetFooter,
   SheetTitle,
   SheetDescription,
-} from './sheet'
+} from './sheet';
 export {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -42,5 +42,6 @@ export {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuRadioGroup,
-} from './dropdown-menu'
-export { Avatar, AvatarImage, AvatarFallback } from './avatar'
+} from './dropdown-menu';
+export { Avatar, AvatarImage, AvatarFallback } from './avatar';
+export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './accordion';
