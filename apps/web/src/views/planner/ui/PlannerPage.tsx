@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import dynamic from 'next/dynamic'
-import { Search, MapPin, Plus, MessageSquare, ArrowRight } from 'lucide-react'
+import { Search, MapPin, Plus, MessageSquare, ArrowRight, Pencil, X } from 'lucide-react'
 import { useTripStore } from '@/entities/trip/model/trip.store'
 import { usePointCrud } from '@/features/route-create'
 import { loadYandexMaps } from '@/shared/lib/yandex-maps'
@@ -53,6 +53,10 @@ function useMockPoints() {
     setPoints((prev) => prev.filter((p) => p.id !== id))
   }
 
+  const update = (id: string, patch: Partial<Pick<RoutePoint, 'title' | 'budget' | 'visitDate'>>) => {
+    setPoints((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)))
+  }
+
   const reorder = async (orderedIds: string[]) => {
     setPoints((prev) => {
       const map = Object.fromEntries(prev.map((p) => [p.id, p]))
@@ -60,7 +64,7 @@ function useMockPoints() {
     })
   }
 
-  return { points, add, remove, reorder }
+  return { points, add, remove, update, reorder }
 }
 
 interface GeoSuggestion {
@@ -77,10 +81,20 @@ export function PlannerPage() {
   const searchContainerRef = useRef<HTMLDivElement>(null)
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const [plannedBudget, setPlannedBudget] = useState(0)
+  const [isActiveRoute, setIsActiveRoute] = useState(false)
+  const [editingPointId, setEditingPointId] = useState<string | null>(null)
+  const [editingTitle, setEditingTitle] = useState('')
+
   const { points: storePoints, currentTrip } = useTripStore()
   const crud = usePointCrud(currentTrip?.id)
   const mock = useMockPoints()
-  const active = DEV_MOCK && !currentTrip ? mock : { points: storePoints, ...crud }
+  const active = DEV_MOCK && !currentTrip ? mock : { points: storePoints, update: () => {}, ...crud }
+
+  const totalBudget = useMemo(
+    () => active.points.reduce((sum, p) => sum + (p.budget ?? 0), 0),
+    [active.points],
+  )
 
   // Закрыть дропдаун при клике снаружи
   useEffect(() => {
@@ -277,12 +291,173 @@ export function PlannerPage() {
               <RouteMap points={active.points} />
             </div>
 
-            {/* TODO: TRI-42 — секция бюджета и список точек */}
-            {active.points.length > 0 && (
-              <div className="mt-6 bg-slate-50 rounded-2xl px-6 py-4 text-sm text-slate-400 text-center border border-slate-100">
-                {active.points.length} {active.points.length === 1 ? 'точка добавлена' : 'точки добавлены'} — детальный список в TRI-42
+            {/* Секция бюджета и список точек */}
+            <div className="mb-10 mt-10 w-full bg-white rounded-[2rem] p-6 md:p-8 border border-slate-100 shadow-xl shadow-slate-200/20">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
+                <h3 className="text-xl md:text-2xl font-black text-brand-indigo uppercase tracking-widest">
+                  Бюджет маршрута
+                </h3>
+                <div className="flex items-center gap-3">
+                  <span className="font-black text-slate-400 uppercase tracking-widest text-xs md:text-sm">
+                    Планируемый:
+                  </span>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={plannedBudget}
+                      onChange={(e) => setPlannedBudget(Number(e.target.value) || 0)}
+                      className="w-24 md:w-32 px-3 py-2 bg-white border border-slate-200 rounded-xl text-right font-bold text-brand-indigo focus:ring-2 focus:ring-brand-sky/20 outline-none transition-all pr-7 text-sm md:text-base"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold pointer-events-none text-sm">₽</span>
+                  </div>
+                </div>
               </div>
-            )}
+
+              <div className="flex flex-col gap-3">
+                {active.points.map((point, i) => (
+                  <div
+                    key={point.id}
+                    className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4 group bg-slate-50 p-4 rounded-2xl border border-transparent hover:border-slate-200 transition-all shadow-sm hover:shadow-md relative"
+                  >
+                    {/* Удалить (мобайл) */}
+                    <button
+                      onClick={() => active.remove(point.id)}
+                      className="md:hidden absolute top-3 right-3 p-2 text-slate-300 hover:text-red-500 transition-colors z-10"
+                    >
+                      <X size={18} />
+                    </button>
+
+                    {/* Номер + название */}
+                    <div className="flex items-center gap-3 flex-1 min-w-0 pr-8 md:pr-0">
+                      <div className="w-5 h-5 md:w-6 md:h-6 shrink-0 rounded-full bg-brand-sky text-white font-bold flex items-center justify-center text-[10px] shadow-sm">
+                        {i + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        {editingPointId === point.id ? (
+                          <input
+                            autoFocus
+                            type="text"
+                            value={editingTitle}
+                            onChange={(e) => setEditingTitle(e.target.value)}
+                            onBlur={() => {
+                              if (editingTitle.trim()) active.update(point.id, { title: editingTitle.trim() })
+                              setEditingPointId(null)
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                if (editingTitle.trim()) active.update(point.id, { title: editingTitle.trim() })
+                                setEditingPointId(null)
+                              }
+                              if (e.key === 'Escape') setEditingPointId(null)
+                            }}
+                            className="w-full bg-white border border-brand-sky rounded-lg px-2 py-1 font-bold text-slate-700 text-sm outline-none"
+                          />
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-700 text-sm md:text-base truncate">
+                              {point.title}
+                            </span>
+                            <button
+                              onClick={() => { setEditingPointId(point.id); setEditingTitle(point.title) }}
+                              className="p-1 text-slate-300 hover:text-brand-sky transition-all shrink-0"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Дата + бюджет + удалить (десктоп) */}
+                    <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                      <input
+                        type="date"
+                        value={point.visitDate?.slice(0, 10) ?? ''}
+                        onChange={(e) => active.update(point.id, { visitDate: e.target.value || null })}
+                        className="w-full md:w-44 px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold text-slate-500 focus:ring-2 focus:ring-brand-sky/20 outline-none transition-all text-sm md:text-base"
+                      />
+                      <div className="flex items-center gap-3 w-full md:w-auto">
+                        <div className="relative w-full md:w-44">
+                          <input
+                            type="number"
+                            min="0"
+                            value={point.budget ?? ''}
+                            onChange={(e) => active.update(point.id, { budget: Math.max(0, Number(e.target.value) || 0) })}
+                            onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault() }}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-right font-bold text-brand-indigo focus:ring-2 focus:ring-brand-sky/20 outline-none transition-all pr-7 text-sm md:text-base"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold pointer-events-none text-sm">₽</span>
+                        </div>
+                        <button
+                          onClick={() => active.remove(point.id)}
+                          className="hidden md:flex p-2 text-slate-300 hover:text-red-500 transition-colors shrink-0"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {active.points.length === 0 && (
+                  <p className="text-center text-slate-400 text-sm py-4">
+                    Добавьте первую точку через поиск выше
+                  </p>
+                )}
+
+                {/* Итого */}
+                <div className="mt-4 pt-6 border-t border-slate-200/60 flex flex-col gap-6">
+                  <div className="flex items-center justify-between px-2">
+                    <span className="font-black text-slate-400 uppercase tracking-widest text-xs md:text-sm">
+                      Итого по точкам
+                    </span>
+                    <span
+                      className={`font-black text-xl md:text-3xl drop-shadow-sm ${
+                        plannedBudget > 0 && totalBudget > plannedBudget
+                          ? 'text-red-500'
+                          : plannedBudget > 0 && totalBudget <= plannedBudget
+                          ? 'text-emerald-500'
+                          : 'text-brand-amber'
+                      }`}
+                    >
+                      {totalBudget.toLocaleString('ru-RU')} ₽
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={isActiveRoute}
+                          onChange={(e) => setIsActiveRoute(e.target.checked)}
+                        />
+                        <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-sky" />
+                      </div>
+                      <span className="text-sm font-bold text-slate-600 group-hover:text-brand-indigo transition-colors">
+                        Сделать активным маршрутом
+                      </span>
+                    </label>
+
+                    <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                      <button
+                        onClick={() => {/* TODO: TRI-32 AI редактирование */}}
+                        className="w-full md:w-auto px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-black uppercase tracking-widest text-sm shadow-lg shadow-purple-500/20 active:scale-95 transition-all"
+                      >
+                        РЕДАКТИРОВАТЬ С AI
+                      </button>
+                      <button
+                        onClick={() => {/* TODO: API сохранение */}}
+                        className="w-full md:w-auto px-8 py-4 bg-brand-indigo text-white rounded-xl font-black uppercase tracking-widest text-sm shadow-lg shadow-brand-indigo/20 hover:brightness-90 active:scale-95 transition-all"
+                      >
+                        СОХРАНИТЬ МАРШРУТ
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
           /* TODO: TRI-43 — таб "Популярные" */
