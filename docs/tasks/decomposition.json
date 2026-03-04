@@ -71,6 +71,12 @@
                   "description": "Добавление, удаление и изменение порядка (reorder) точек.",
                   "branch": "feature/TRI-08-backend-points-crud",
                   "subtasks": []
+                },
+                {
+                  "title": "Popular routes: схема + seed + API",
+                  "description": "Расширить таблицу trips полями: is_public (boolean), source ('user'|'seed'|'ai'), cover_image_url, tags (array), weather_temp, total_price_display. Создать seed файл apps/api/src/db/seeds/popular-routes.seed.ts с 5 маршрутами из прототипа. Добавить скрипт pnpm db:seed. Endpoint GET /trips/popular?filter= (только is_public=true).",
+                  "branch": "feature/TRI-44-backend-popular-routes-seed",
+                  "subtasks": []
                 }
               ]
             },
@@ -134,7 +140,7 @@
                 },
                 {
                   "title": "Шаг 2: YandexFetch",
-                  "description": "HTTP-запросы к API Карт, валидация и нормализация координат.",
+                  "description": "HTTP-запросы к API Карт, валидация и нормализация координат. Плюс admin CLI: pnpm ai:generate-popular <city> — вызывает YandexGPT, получает топ-места города, сохраняет в trips({ source: 'ai', is_public: true }). Это девелоперская операция, не user-facing.",
                   "branch": "feature/TRI-16-backend-ai-yandex",
                   "subtasks": []
                 },
@@ -262,6 +268,30 @@
                   "title": "Drag & Drop",
                   "description": "Сортировка списка с помощью @dnd-kit.",
                   "branch": "feature/TRI-31-front-route-dnd",
+                  "subtasks": []
+                },
+                {
+                  "title": "Редизайн PlannerPage: layout + табы + поиск",
+                  "description": "Снести sidebar-layout, сделать вертикальную страницу max-w-5xl по центру. Заголовок 'Маршруты', два таба (Конструктор / Популярные). В табе Конструктор: поисковая строка с иконкой и кнопкой 'ДОБАВИТЬ', дропдаун с результатами Яндекс Карт + опция 'Найти с AI'. Карта на всю ширину (aspect-[21/9]). Точная копия дизайна из travel-planner-design/components/PlannerPage.js.",
+                  "branch": "feature/TRI-41-front-planner-redesign-layout",
+                  "subtasks": []
+                },
+                {
+                  "title": "Редизайн PlannerPage: список точек с бюджетом и датой",
+                  "description": "Секция 'Бюджет маршрута' под картой: поле 'Планируемый бюджет', список точек (номер, название с inline-edit карандашом, поле даты, поле бюджета ₽, кнопка удаления), итого с цветовой индикацией (красный/зелёный/amber), тогл 'Сделать активным маршрутом', кнопки 'РЕДАКТИРОВАТЬ С AI' и 'СОХРАНИТЬ МАРШРУТ'. По дизайну из прототипа.",
+                  "branch": "feature/TRI-42-front-planner-points-list",
+                  "subtasks": []
+                },
+                {
+                  "title": "Редизайн PlannerPage: таб «Популярные»",
+                  "description": "Второй таб: поиск по направлению, фильтр-чипсы (Все / Активный / Зима / Экстрим), grid карточек маршрутов с фото, заголовком, ценой (бейдж brand-amber), описанием. Захардкоженные маршруты (Байкал, Алтай, Камчатка и т.д.) из прототипа travel-planner-design.",
+                  "branch": "feature/TRI-43-front-planner-popular-tab",
+                  "subtasks": []
+                },
+                {
+                  "title": "usePopularRoutes: заменить хардкод на API",
+                  "description": "После TRI-44 (бэкенд готов): создать хук features/popular-routes/api/usePopularRoutes.ts — fetch GET /trips/popular?filter=. Заменить PREDEFINED_ROUTES в PlannerPage на хук. Добавить skeleton loading (3 карточки-заглушки). Зависит от: TRI-44.",
+                  "branch": "feature/TRI-45-front-popular-routes-api",
                   "subtasks": []
                 }
               ]
