@@ -96,8 +96,7 @@ export function RouteMap({ points }: RouteMapProps) {
   return (
     <div
       ref={containerRef}
-      className="w-full h-full rounded-2xl overflow-hidden"
-      style={{ minHeight: 400 }}
+      className="w-full h-full rounded-[2.5rem] overflow-hidden"
     />
   )
 }
