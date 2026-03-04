@@ -8,7 +8,12 @@
       "Bash(git checkout -b feature/TRI-25-front-zustand)",
       "Bash(pnpm add zustand)",
       "Bash(git checkout -b feature/TRI-27-front-auth-modals)",
-      "Bash(pnpm add react-hook-form zod @hookform/resolvers)"
+      "Bash(pnpm add react-hook-form zod @hookform/resolvers)",
+      "Bash(git checkout -b feature/TRI-04-backend-auth-jwt)",
+      "Bash(pnpm add @nestjs/passport @nestjs/jwt passport passport-jwt passport-local)",
+      "Bash(pnpm add -D @types/passport-jwt @types/passport-local)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(git checkout -b feature/TRI-05-backend-auth-endpoints)"
     ]
   }
 }
