@@ -1,15 +1,9 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { Inter } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-});
+const inter = Inter({ subsets: ["cyrillic", "latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "Travel Planner",
@@ -23,8 +17,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className={`${inter.variable} antialiased font-sans`}>
         {children}
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );
