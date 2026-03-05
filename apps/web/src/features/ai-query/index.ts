@@ -4,4 +4,4 @@
 // Imports allowed: entities, shared
 
 export { useAiQueryStore } from './model/ai-query.store';
-export type { ChatMessage } from './model/ai-query.store';
+export type { ChatMessage } from '@/shared/types/ai-chat';

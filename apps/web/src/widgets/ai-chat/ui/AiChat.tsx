@@ -1,15 +1,18 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Send } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
-import { MessageBubble, type ChatMessage } from './MessageBubble';
+import { MessageBubble } from './MessageBubble';
+import type { ChatMessage } from '@/shared/types/ai-chat';
 
 interface AiChatProps {
   messages: ChatMessage[];
   isLoading?: boolean;
   onSend: (query: string) => void | Promise<void>;
+  onApplyPlan?: (messageId: string) => void;
+  lastAppliedPlanMessageId?: string | null;
   quickActions?: string[];
 }
 
@@ -45,9 +48,12 @@ export function AiChat({
   messages,
   isLoading = false,
   onSend,
+  onApplyPlan,
+  lastAppliedPlanMessageId = null,
   quickActions = DEFAULT_QUICK_ACTIONS,
 }: AiChatProps) {
   const [query, setQuery] = useState('');
+  const [validationError, setValidationError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -57,6 +63,12 @@ export function AiChat({
   const handleSubmit = () => {
     const trimmed = query.trim();
     if (!trimmed || isLoading) return;
+    if (trimmed.length > 1000) {
+      setValidationError('Максимальная длина запроса — 1000 символов.');
+      return;
+    }
+
+    setValidationError(null);
     onSend(trimmed);
     setQuery('');
   };
@@ -80,7 +92,12 @@ export function AiChat({
         ) : (
           <div className="flex flex-col gap-3">
             {messages.map((message) => (
-              <MessageBubble key={message.id} message={message} />
+              <MessageBubble
+                key={message.id}
+                message={message}
+                onApplyPlan={onApplyPlan}
+                wasApplied={lastAppliedPlanMessageId === message.id}
+              />
             ))}
 
             {isLoading && <AiResponseSkeleton />}
@@ -108,7 +125,10 @@ export function AiChat({
         <div className="flex gap-2">
           <Input
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value.slice(0, 1000));
+              if (validationError) setValidationError(null);
+            }}
             placeholder="Например: 2 дня в Казани с бюджетом 10000"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
@@ -127,6 +147,11 @@ export function AiChat({
           >
             <Send className="h-4 w-4" />
           </Button>
+        </div>
+
+        <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
+          <span>{query.length}/1000</span>
+          {validationError && <span className="text-red-500">{validationError}</span>}
         </div>
       </div>
     </div>

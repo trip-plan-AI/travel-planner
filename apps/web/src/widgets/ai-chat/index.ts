@@ -5,4 +5,4 @@
 
 export { AiChat } from './ui/AiChat';
 export { MessageBubble } from './ui/MessageBubble';
-export type { ChatMessage } from './ui/MessageBubble';
+export type { ChatMessage } from '@/shared/types/ai-chat';
