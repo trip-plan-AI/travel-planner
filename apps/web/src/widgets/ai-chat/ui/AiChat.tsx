@@ -9,7 +9,7 @@ import { MessageBubble, type ChatMessage } from './MessageBubble';
 interface AiChatProps {
   messages: ChatMessage[];
   isLoading?: boolean;
-  onSend: (query: string) => void;
+  onSend: (query: string) => void | Promise<void>;
   quickActions?: string[];
 }
 
@@ -19,6 +19,27 @@ const DEFAULT_QUICK_ACTIONS = [
   'Что посмотреть?',
   'Смени город',
 ];
+
+function AiResponseSkeleton() {
+  return (
+    <div className="flex justify-start">
+      <div className="w-full max-w-[85%] rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+        <div className="h-4 w-40 animate-pulse rounded bg-slate-200" />
+        <div className="mt-2 h-3 w-full animate-pulse rounded bg-slate-100" />
+        <div className="mt-1 h-3 w-4/5 animate-pulse rounded bg-slate-100" />
+
+        <div className="mt-4 flex flex-col gap-2">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+              <div className="h-3 w-3/5 animate-pulse rounded bg-slate-200" />
+              <div className="mt-2 h-3 w-full animate-pulse rounded bg-slate-100" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function AiChat({
   messages,
@@ -62,24 +83,7 @@ export function AiChat({
               <MessageBubble key={message.id} message={message} />
             ))}
 
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="flex w-16 gap-1 rounded-2xl bg-white p-3">
-                  <span
-                    className="h-2 w-2 animate-bounce rounded-full bg-gray-400"
-                    style={{ animationDelay: '0ms' }}
-                  />
-                  <span
-                    className="h-2 w-2 animate-bounce rounded-full bg-gray-400"
-                    style={{ animationDelay: '150ms' }}
-                  />
-                  <span
-                    className="h-2 w-2 animate-bounce rounded-full bg-gray-400"
-                    style={{ animationDelay: '300ms' }}
-                  />
-                </div>
-              </div>
-            )}
+            {isLoading && <AiResponseSkeleton />}
           </div>
         )}
 
