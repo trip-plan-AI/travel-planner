@@ -13,9 +13,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     <div className="flex h-screen">
       {!isLanding && <Sidebar />}
       <div className={`flex-1 flex flex-col ${!isLanding ? 'ml-20' : ''}`}>
-        {!isLanding && <Header />}
+        <Header />
         <main
-          className={isLanding ? 'flex-1 overflow-auto bg-white' : 'flex-1 overflow-auto bg-brand-bg pb-16 md:pb-0'}
+          className={
+            isLanding
+              ? 'flex-1 overflow-auto bg-white'
+              : 'flex-1 overflow-auto bg-brand-bg pb-16 md:pb-0'
+          }
         >
           {children}
         </main>

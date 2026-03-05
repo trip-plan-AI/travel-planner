@@ -194,7 +194,7 @@ export function LandingPage() {
   return (
     <>
       <div className="relative flex flex-col min-h-full bg-white">
-        <section className="relative w-full h-auto md:h-screen flex flex-col items-center justify-start md:justify-center overflow-hidden py-8 md:py-0">
+        <section className="relative w-full h-auto md:h-screen flex flex-col items-center justify-start md:justify-center overflow-hidden py-8 md:py-0 pt-32 md:pt-32">
           <div className="absolute inset-0 z-0">
             <img
               src="/assets/video/hero-poster.jpg"
@@ -228,19 +228,19 @@ export function LandingPage() {
             <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent" />
           </div>
 
-          <div className="relative z-10 w-full max-w-5xl mx-auto px-4 md:px-6 text-center flex flex-col items-center">
-            <h1 className="text-3xl md:text-5xl font-black text-white mb-4 tracking-tight leading-[0.95] drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] mx-auto">
+          <div className="relative z-10 w-full max-w-5xl mx-auto px-4 md:px-6 text-center flex flex-col items-center scale-[0.66] origin-top">
+            <h1 className="text-5xl md:text-7xl font-black text-white mb-6 tracking-tight leading-[0.9] drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] mx-auto">
               Личный <br /> <span className="text-brand-sky">тревел-гид</span>
             </h1>
-            <p className="text-white text-sm md:text-lg font-medium mb-7 max-w-2xl mx-auto drop-shadow-2xl leading-relaxed">
+            <p className="text-white text-lg md:text-2xl font-medium mb-9 max-w-3xl mx-auto drop-shadow-2xl leading-relaxed">
               Планирование ещё никогда не было таким простым.
             </p>
 
-            <div className="w-full max-w-3xl mx-auto text-center">
-              <div className="flex justify-center items-center gap-2 mb-8 md:mb-10">
+            <div className="w-full max-w-5xl mx-auto text-center">
+              <div className="flex justify-center items-center gap-2 mb-6 md:mb-7">
                 <button
                   onClick={() => setSearchMode('ai')}
-                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all backdrop-blur-md ${
+                  className={`px-5 py-2 rounded-full text-sm font-black transition-all backdrop-blur-md ${
                     searchMode === 'ai'
                       ? 'bg-white text-brand-indigo border border-white shadow-lg'
                       : 'bg-white/10 border border-white/10 text-white hover:bg-white/20'
@@ -250,7 +250,7 @@ export function LandingPage() {
                 </button>
                 <button
                   onClick={() => setSearchMode('manual')}
-                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all backdrop-blur-md ${
+                  className={`px-5 py-2 rounded-full text-sm font-black transition-all backdrop-blur-md ${
                     searchMode === 'manual'
                       ? 'bg-white text-brand-indigo border border-white shadow-lg'
                       : 'bg-white/10 border border-white/10 text-white hover:bg-white/20'
@@ -260,69 +260,106 @@ export function LandingPage() {
                 </button>
               </div>
 
-              <div className="bg-white/10 backdrop-blur-3xl p-1 md:p-1.5 rounded-[2rem] md:rounded-[3rem] border-2 border-white/25 shadow-2xl shadow-black/20 transition-none mx-auto">
+              <div
+                className={`bg-white/10 backdrop-blur-3xl p-2.5 rounded-[4rem] border border-white/20 shadow-2xl shadow-black/20 transition-none mx-auto ${
+                  searchMode === 'manual'
+                    ? 'w-full md:w-[762px] md:h-[443px] max-w-full flex items-center justify-center'
+                    : ''
+                }`}
+              >
                 {searchMode === 'ai' ? (
-                  <div className="bg-white rounded-[2rem] md:rounded-[2.6rem] flex items-center p-1 md:p-1.5 pr-2 md:pr-3 min-h-[64px] md:min-h-[72px] focus-within:ring-4 focus-within:ring-brand-sky/10 transition-none">
+                  <div className="bg-white rounded-[2.2rem] md:rounded-[3.5rem] flex items-center p-1 md:p-1.5 pr-2 md:pr-3 min-h-[64px] md:min-h-[74px] focus-within:ring-4 focus-within:ring-brand-sky/10 transition-none">
                     <div className="flex-1 relative group">
                       <textarea
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Например: Сочи за 45 000 руб на 5 дней"
                         rows={inputRows}
-                          className="w-full py-3 md:py-4 !pl-8 md:!pl-10 pr-12 md:pr-14 bg-transparent outline-none text-slate-800 font-bold text-sm md:text-base placeholder:text-slate-400 placeholder:font-normal resize-none overflow-hidden leading-snug md:leading-normal"
-                        />
+                        className="w-full py-2.5 md:py-4 !pl-10 md:!pl-14 pr-12 md:pr-14 bg-transparent outline-none text-slate-800 font-black text-sm md:text-lg placeholder:text-slate-400 placeholder:font-normal resize-none overflow-hidden leading-snug md:leading-normal"
+                      />
                       <button className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 hover:text-brand-sky transition-colors">
                         <Mic size={22} />
                       </button>
                     </div>
                     <button
                       onClick={handleSearch}
-                        className="w-12 h-12 md:w-14 md:h-14 bg-brand-amber text-white rounded-full flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 shrink-0"
-                      >
-                        <ArrowRight size={24} />
-                      </button>
+                      className="w-11 h-11 md:w-14 md:h-14 bg-brand-amber text-white rounded-full flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 shrink-0"
+                    >
+                      <ArrowRight size={22} />
+                    </button>
                   </div>
                 ) : (
-                  <div className="bg-white rounded-[2.2rem] md:rounded-[3.5rem] p-4 md:p-8 transition-none">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <input
-                        type="text"
-                        placeholder="Москва"
-                        value={manualForm.from}
-                        onChange={(e) => setManualForm((p) => ({ ...p, from: e.target.value }))}
-                        className="w-full px-5 py-3 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-brand-sky/20 outline-none font-bold text-slate-700 placeholder:text-slate-400"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Алтай"
-                        value={manualForm.to}
-                        onChange={(e) => setManualForm((p) => ({ ...p, to: e.target.value }))}
-                        className="w-full px-5 py-3 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-brand-sky/20 outline-none font-bold text-slate-700 placeholder:text-slate-400"
-                      />
-                      <input
-                        type="date"
-                        value={manualForm.dateFrom}
-                        onChange={(e) => setManualForm((p) => ({ ...p, dateFrom: e.target.value }))}
-                        className="w-full px-5 py-3 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-brand-sky/20 outline-none font-bold text-slate-700"
-                      />
-                      <input
-                        type="date"
-                        min={manualForm.dateFrom}
-                        value={manualForm.dateTo}
-                        onChange={(e) => setManualForm((p) => ({ ...p, dateTo: e.target.value }))}
-                        className="w-full px-5 py-3 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-brand-sky/20 outline-none font-bold text-slate-700"
-                      />
-                      <input
-                        type="text"
-                        placeholder="100 000 ₽"
-                        value={manualForm.budget}
-                        onChange={(e) => setManualForm((p) => ({ ...p, budget: e.target.value }))}
-                        className="w-full px-5 py-3 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-brand-sky/20 outline-none font-bold text-slate-700 placeholder:text-slate-400 md:col-span-2"
-                      />
+                  <div className="bg-white rounded-[3.5rem] p-3 md:p-5 transition-none md:w-[761px] md:h-[414px] mx-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <label className="text-sm md:text-base font-black text-slate-700 uppercase ml-3">
+                          Откуда
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Москва"
+                          value={manualForm.from}
+                          onChange={(e) => setManualForm((p) => ({ ...p, from: e.target.value }))}
+                          className="w-full px-4 py-2.5 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-brand-sky/20 outline-none font-black text-slate-700 transition-all placeholder:text-slate-400"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm md:text-base font-black text-slate-700 uppercase ml-3">
+                          Куда
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Алтай"
+                          value={manualForm.to}
+                          onChange={(e) => setManualForm((p) => ({ ...p, to: e.target.value }))}
+                          className="w-full px-4 py-2.5 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-brand-sky/20 outline-none font-black text-slate-700 transition-all placeholder:text-slate-400"
+                        />
+                      </div>
+                      <div className="space-y-2 col-span-1 md:col-span-2">
+                        <label className="text-sm md:text-base font-black text-slate-700 uppercase ml-3">
+                          Даты
+                        </label>
+                        <div className="flex flex-col md:flex-row md:items-center gap-2">
+                          <input
+                            type="date"
+                            value={manualForm.dateFrom}
+                            onChange={(e) =>
+                              setManualForm((p) => ({ ...p, dateFrom: e.target.value }))
+                            }
+                            placeholder="dd/mm/yyyy"
+                            className="w-full px-4 py-2.5 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-brand-sky/20 outline-none font-black text-slate-700 transition-all text-sm"
+                          />
+                          <span className="text-slate-400 font-black shrink-0 text-lg hidden md:block">
+                            —
+                          </span>
+                          <input
+                            type="date"
+                            min={manualForm.dateFrom}
+                            value={manualForm.dateTo}
+                            onChange={(e) =>
+                              setManualForm((p) => ({ ...p, dateTo: e.target.value }))
+                            }
+                            placeholder="dd/mm/yyyy"
+                            className="w-full px-4 py-2.5 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-brand-sky/20 outline-none font-black text-slate-700 transition-all text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm md:text-base font-black text-slate-700 uppercase ml-3">
+                          Бюджет
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="100 000 ₽"
+                          value={manualForm.budget}
+                          onChange={(e) => setManualForm((p) => ({ ...p, budget: e.target.value }))}
+                          className="w-full px-4 py-2.5 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-brand-sky/20 outline-none font-black text-slate-700 transition-all placeholder:text-slate-400"
+                        />
+                      </div>
                     </div>
                     <button
                       onClick={handleSearch}
-                      className="w-auto px-12 mt-6 py-4 bg-brand-amber text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-brand-amber/20 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 mx-auto"
+                      className="w-auto px-10 mt-4 py-3 bg-brand-amber text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-brand-amber/20 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 mx-auto"
                     >
                       Добавить
                     </button>
@@ -330,11 +367,13 @@ export function LandingPage() {
                 )}
               </div>
 
-              <div className="mt-5 md:mt-6 flex flex-wrap gap-2 justify-center items-center">
+              <div
+                className={`flex flex-wrap gap-3 justify-center items-center ${searchMode === 'manual' ? 'mt-8 md:mt-9' : 'mt-6 md:mt-7'}`}
+              >
                 {QUICK_FILTERS.map((filter) => (
                   <button
                     key={filter.label}
-                    className="px-3 py-1.5 bg-white/10 backdrop-blur-md border border-white/10 rounded-full text-white text-[10px] md:text-xs font-bold hover:bg-white/20 transition-all"
+                    className="px-5 py-2 bg-white/10 backdrop-blur-md border border-white/10 rounded-full text-white text-sm font-black hover:bg-white/20 transition-all"
                   >
                     {filter.icon} {filter.label}
                   </button>
@@ -345,13 +384,13 @@ export function LandingPage() {
         </section>
 
         <section className="relative z-20 bg-white w-screen left-1/2 -translate-x-1/2 font-sans">
-          <div className="w-full max-w-4xl mx-auto px-4 md:px-6 py-16 text-center flex flex-col items-center">
+          <div className="w-full max-w-4xl mx-auto px-4 md:px-6 py-16 text-center flex flex-col items-center scale-[0.8] origin-top">
             <div className="flex flex-col md:flex-row justify-center items-center gap-6 md:gap-10 text-center mb-12 md:mb-14">
               <div className="flex flex-col items-center">
                 <h3 className="text-2xl md:text-3xl font-black tracking-tighter text-brand-indigo">
                   AI
                 </h3>
-                <p className="text-xs text-slate-400 uppercase font-bold tracking-widest mt-2">
+                <p className="text-xs text-slate-400 uppercase font-black tracking-widest mt-2">
                   Генерация за секунды
                 </p>
               </div>
@@ -360,7 +399,7 @@ export function LandingPage() {
                 <h3 className="text-2xl md:text-3xl font-black tracking-tighter text-emerald-500">
                   100%
                 </h3>
-                <p className="text-xs text-slate-400 uppercase font-bold tracking-widest mt-2">
+                <p className="text-xs text-slate-400 uppercase font-black tracking-widest mt-2">
                   Редактируемый маршрут
                 </p>
               </div>
@@ -369,7 +408,7 @@ export function LandingPage() {
                 <h3 className="text-2xl md:text-3xl font-black tracking-tighter text-brand-amber">
                   24/7
                 </h3>
-                <p className="text-xs text-slate-400 uppercase font-bold tracking-widest mt-2">
+                <p className="text-xs text-slate-400 uppercase font-black tracking-widest mt-2">
                   В любое время
                 </p>
               </div>
@@ -386,16 +425,16 @@ export function LandingPage() {
                       <button
                         key={f}
                         onClick={() => setSelectedFilter(f)}
-                      className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border-2 ${
+                        className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border-2 inline-flex items-center justify-center gap-2 leading-none ${
                           selectedFilter === f
                             ? 'bg-brand-sky text-white border-brand-sky shadow-lg'
                             : 'bg-white text-slate-500 border-slate-100 hover:border-brand-sky/30'
                         }`}
                       >
-                        {f === 'Активный' && <span className="text-sm">⚡</span>}
-                        {f === 'Зима' && <span className="text-sm">❄️</span>}
-                        {f === 'Экстрим' && <span className="text-sm">⛰️</span>}
-                        {f}
+                        {f === 'Активный' && <span className="text-sm leading-none">⚡</span>}
+                        {f === 'Зима' && <span className="text-sm leading-none">❄️</span>}
+                        {f === 'Экстрим' && <span className="text-sm leading-none">⛰️</span>}
+                        <span className="leading-none">{f}</span>
                       </button>
                     ))}
                     <div className="w-12 shrink-0 md:hidden" />
@@ -419,7 +458,7 @@ export function LandingPage() {
                           alt={trip.title}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-                        <div className="absolute top-6 left-6 bg-slate-900/40 backdrop-blur-md border border-white/10 rounded-xl px-3 py-1.5 text-white font-bold text-xs flex items-center gap-1.5">
+                        <div className="absolute top-6 left-6 bg-slate-900/40 backdrop-blur-md border border-white/10 rounded-xl px-3 py-1.5 text-white font-black text-xs flex items-center gap-1.5">
                           <Icon size={14} /> {trip.temp}
                         </div>
                         <div className="absolute bottom-6 left-6 right-6 text-left">
