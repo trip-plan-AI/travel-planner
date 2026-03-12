@@ -147,9 +147,6 @@ export class GeosearchService {
     const cacheKey = `geo:suggest:${normalized.toLowerCase()}`;
     const cached = await this.redis.get(cacheKey);
     if (cached) {
-      if (normalized.toLowerCase() === 'уфа') {
-        console.log(`[SUGGEST] "Уфа" returned from CACHE`);
-      }
       return this.applyProximity(JSON.parse(cached), userLat, userLon);
     }
 
@@ -163,25 +160,23 @@ export class GeosearchService {
     ]);
 
     const tier0Items = tier0Res.status === 'fulfilled' ? (tier0Res.value ?? []) : [];
-    const dadataItems = dadataRes.status === 'fulfilled' ? (dadataRes.value ?? []) : [];
+    let dadataItems = dadataRes.status === 'fulfilled' ? (dadataRes.value ?? []) : [];
     let nominatimRuItems = nominatimRuRes.status === 'fulfilled' ? (nominatimRuRes.value ?? []) : [];
-
-    if (normalized.toLowerCase() === 'уфа') {
-      console.log(`[SUGGEST] Tier sources: tier0=${tier0Items.length}, dadata=${dadataItems.length}, nomRu=${nominatimRuItems.length}`);
-      if (dadataItems.length > 0) console.log(`  DaData[0]: ${dadataItems[0].displayName}`);
-      if (nominatimRuItems.length > 0) console.log(`  NomRu[0]: ${nominatimRuItems[0].displayName}`);
-    }
 
     // Фильтр: если запрос на русском и мы ищем в RU, отбросить явно иностранные результаты
     // (например, "Уфа" не должна возвращать "Дубай, ОАЭ" или "Abu Dhabi, UAE")
     const isRussianQuery = /[а-яё]/i.test(normalized);
-    if (isRussianQuery && nominatimRuItems.length > 0) {
-      const beforeFilter = nominatimRuItems.length;
-      const foreignCountries = /\b(ОАЭ|UAE|emirat|दुबई|Dubai|Абу|Abu|Qatar|Катар|Saudi|Саудов|Egypt|Египет|Turkey|Турция|Greece|Греция|Spain|Испан|Italy|Итали|France|Франц|Germany|Герман|Poland|Польш|Ukraine|Украин|Belarus|Белорус|Kazakhstan|Казах|China|Китай|Japan|Япон|Korea|Кор|India|Инд|USA|США|Canada|Канад|Mexico|Мекс|Brazil|Бразил|Argentina|Аргент|Australia|Австрал)\b/i;
-      nominatimRuItems = nominatimRuItems.filter(item => !foreignCountries.test(item.displayName));
-      if (normalized.toLowerCase() === 'уфа') {
-        console.log(`[SUGGEST] Tier2 filter: nomRu before=${beforeFilter}, after=${nominatimRuItems.length}`);
-        if (beforeFilter > 0) console.log(`  nomRu[0] before: ${nominatimRuItems[0]?.displayName || 'none'}`);
+    const foreignCountries = /(ОАЭ|UAE|emirat|दुबई|Dubai|Абу|Abu|Qatar|Катар|Saudi|Саудов|Egypt|Египет|Turkey|Турция|Greece|Греция|Spain|Испан|Italy|Итали|France|Франц|Germany|Герман|Poland|Польш|Ukraine|Украин|Belarus|Белорус|Kazakhstan|Казах|Uzbek|Узбекистан|China|Китай|Japan|Япон|Korea|Кореа|India|Инд|USA|США|Canada|Канад|Mexico|Мекс|Brazil|Бразил|Argentina|Аргент|Australia|Австрал|Israel|Израиль|Иерусалим|Jerusalem)/i;
+
+    if (isRussianQuery) {
+      // Filter DaData results
+      if (dadataItems.length > 0) {
+        dadataItems = dadataItems.filter(item => !foreignCountries.test(item.displayName));
+      }
+
+      // Filter Nominatim RU results
+      if (nominatimRuItems.length > 0) {
+        nominatimRuItems = nominatimRuItems.filter(item => !foreignCountries.test(item.displayName));
       }
     }
 
@@ -195,6 +190,7 @@ export class GeosearchService {
         return { ...item, score: this.scoreResult(item.displayName, normalized) };
       })
       .sort((a, b) => b.score - a.score);
+
 
     // Фильтр: убираем результаты без валидных координат (ll=null,null или NaN)
     const validCoords = allScored.filter(item => {
@@ -248,24 +244,14 @@ export class GeosearchService {
     }).slice(0, 10);
 
     if (scored.length > 0 && scored[0].score >= 2) {
-      if (normalized.toLowerCase() === 'уфа') {
-        console.log(`[SUGGEST] "Уфа" found in Tier 2, returning`);
-      }
       await this.redis.set(cacheKey, JSON.stringify(scored), 60 * 60 * 24 * 7);
       return this.applyProximity(scored, userLat, userLon);
-    }
-
-    if (normalized.toLowerCase() === 'уфа') {
-      console.log(`[SUGGEST] "Уфа" going to Tier 3 (scored=${scored.length})`);
     }
 
     // Tier 3: Photon → Yandex (если Tier 2 ничего не нашёл или score слабый)
     let tier3Results: Array<{ displayName: string; uri: string }> = [];
 
     const photonResults = await this.getPhotonSuggestions(normalized);
-    if (normalized.toLowerCase() === 'уфа' && photonResults?.length) {
-      console.log(`[SUGGEST] "Уфа" Photon found ${photonResults.length} results`);
-    }
     if (photonResults && photonResults.length > 0) {
       tier3Results = photonResults;
     } else {
@@ -277,13 +263,8 @@ export class GeosearchService {
 
     // Финальный фильтр: если русский запрос, отбросить иностранные страны
     if (isRussianQuery && tier3Results.length > 0) {
-      const foreignCountries = /\b(ОАЭ|UAE|emirat|दुबई|Dubai|Абу|Abu|Qatar|Катар|Saudi|Саудов|Egypt|Египет|Turkey|Турция|Greece|Греция|Spain|Испан|Italy|Итали|France|Франц|Germany|Герман|Poland|Польш|Ukraine|Украин|Belarus|Белорус|Kazakhstan|Казах|China|Китай|Japan|Япон|Korea|Кор|India|Инд|USA|США|Canada|Канад|Mexico|Мекс|Brazil|Бразил|Argentina|Аргент|Australia|Австрал|Israel|Израиль|Иерусалим|Jerusalem)\b/i;
-      const beforeFilter = tier3Results.length;
+      const foreignCountries = /(ОАЭ|UAE|emirat|दुबई|Dubai|Абу|Abu|Qatar|Катар|Saudi|Саудов|Egypt|Египет|Turkey|Турция|Greece|Греция|Spain|Испан|Italy|Итали|France|Франц|Germany|Герман|Poland|Польш|Ukraine|Украин|Belarus|Белорус|Kazakhstan|Казах|Uzbek|Узбекистан|China|Китай|Japan|Япон|Korea|Кореа|India|Инд|USA|США|Canada|Канад|Mexico|Мекс|Brazil|Бразил|Argentina|Аргент|Australia|Австрал|Israel|Израиль|Иерусалим|Jerusalem)/i;
       tier3Results = tier3Results.filter(item => !foreignCountries.test(item.displayName));
-      if (normalized.toLowerCase() === 'уфа') {
-        console.log(`[DEBUG] "Уфа": isRussian=${isRussianQuery}, tier3Before=${beforeFilter}, tier3After=${tier3Results.length}`);
-        if (beforeFilter > 0) console.log(`  First before filter: ${tier3Results[0]?.displayName || 'none'}`);
-      }
     }
 
     if (tier3Results.length > 0) {

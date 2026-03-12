@@ -73,7 +73,7 @@ export class PopularDestinationsService implements OnModuleInit {
     const scored = this.cache.map(dest => {
       const nameScore = fuzzySubstringMatch(normalized, dest.nameRu);
       const aliasScore = dest.aliases ? fuzzySubstringMatch(normalized, dest.aliases) : 0;
-      
+
       return {
         ...dest,
         matchScore: Math.max(nameScore, aliasScore)
@@ -92,7 +92,7 @@ export class PopularDestinationsService implements OnModuleInit {
     let results = scored.slice(0, limit);
 
     if (isRussianQuery) {
-      const foreignCountries = /\b(ОАЭ|UAE|emirat|दुबई|Dubai|Абу|Abu|Qatar|Катар|Saudi|Саудов|Egypt|Египет|Turkey|Турция|Greece|Греция|Spain|Испан|Italy|Итали|France|Франц|Germany|Герман|Poland|Польш|Ukraine|Украин|Belarus|Белорус|Kazakhstan|Казах|China|Китай|Japan|Япон|Korea|Кор|India|Инд|USA|США|Canada|Канад|Mexico|Мекс|Brazil|Бразил|Argentina|Аргент|Australia|Австрал|Israel|Израиль|Иерусалим|Jerusalem)\b/i;
+      const foreignCountries = /(ОАЭ|UAE|emirat|दुबई|Dubai|Абу|Abu|Qatar|Катар|Saudi|Саудов|Egypt|Египет|Turkey|Турция|Greece|Греция|Spain|Испан|Italy|Итали|France|Франц|Germany|Герман|Poland|Польш|Ukraine|Украин|Belarus|Белорус|Kazakhstan|Казах|Uzbek|Узбекистан|China|Китай|Japan|Япон|Korea|Кореа|India|Инд|USA|США|Canada|Канад|Mexico|Мекс|Brazil|Бразил|Argentina|Аргент|Australia|Австрал|Israel|Израиль|Иерусалим|Jerusalem)/i;
       results = results.filter(dest => !foreignCountries.test(dest.displayName));
     }
 
