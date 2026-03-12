@@ -155,9 +155,15 @@ export class GeosearchService {
 
     const tier0Items = tier0Res.status === 'fulfilled' ? (tier0Res.value ?? []) : [];
     const dadataItems = dadataRes.status === 'fulfilled' ? (dadataRes.value ?? []) : [];
-    const nominatimRuItems = nominatimRuRes.status === 'fulfilled' ? (nominatimRuRes.value ?? []) : [];
+    let nominatimRuItems = nominatimRuRes.status === 'fulfilled' ? (nominatimRuRes.value ?? []) : [];
 
-    console.log(`[GeosearchService] suggest("${normalized}"): tier0=${tier0Items.length}, dadata=${dadataItems.length}, nominatimRu=${nominatimRuItems.length}`);
+    // Фильтр: если запрос на русском и мы ищем в RU, отбросить явно иностранные результаты
+    // (например, "Уфа" не должна возвращать "Дубай, ОАЭ" или "Abu Dhabi, UAE")
+    const isRussianQuery = /[а-яё]/i.test(normalized);
+    if (isRussianQuery && nominatimRuItems.length > 0) {
+      const foreignCountries = /\b(ОАЭ|UAE|emirat|दुबई|Dubai|Абу|Abu|Qatar|Катар|Saudi|Саудов|Egypt|Египет|Turkey|Турция|Greece|Греция|Spain|Испан|Italy|Итали|France|Франц|Germany|Герман|Poland|Польш|Ukraine|Украин|Belarus|Белорус|Kazakhstan|Казах|China|Китай|Japan|Япон|Korea|Кор|India|Инд|USA|США|Canada|Канад|Mexico|Мекс|Brazil|Бразил|Argentina|Аргент|Australia|Австрал)\b/i;
+      nominatimRuItems = nominatimRuItems.filter(item => !foreignCountries.test(item.displayName));
+    }
 
     // Score сначала — чтобы dedup оставлял наиболее релевантный результат в ячейке
     const allScored = [...tier0Items, ...dadataItems, ...nominatimRuItems]
