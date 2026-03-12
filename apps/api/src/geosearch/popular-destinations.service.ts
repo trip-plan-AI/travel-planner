@@ -87,7 +87,16 @@ export class PopularDestinationsService implements OnModuleInit {
       return b.popularity - a.popularity;
     });
 
-    return scored.slice(0, limit).map((dest) => ({
+    // Filter out foreign countries for Russian queries
+    const isRussianQuery = /[а-яё]/i.test(normalized);
+    let results = scored.slice(0, limit);
+
+    if (isRussianQuery) {
+      const foreignCountries = /\b(ОАЭ|UAE|emirat|दुबई|Dubai|Абу|Abu|Qatar|Катар|Saudi|Саудов|Egypt|Египет|Turkey|Турция|Greece|Греция|Spain|Испан|Italy|Итали|France|Франц|Germany|Герман|Poland|Польш|Ukraine|Украин|Belarus|Белорус|Kazakhstan|Казах|China|Китай|Japan|Япон|Korea|Кор|India|Инд|USA|США|Canada|Канад|Mexico|Мекс|Brazil|Бразил|Argentina|Аргент|Australia|Австрал|Israel|Израиль|Иерусалим|Jerusalem)\b/i;
+      results = results.filter(dest => !foreignCountries.test(dest.displayName));
+    }
+
+    return results.map((dest) => ({
       displayName: dest.displayName,
       uri: `ymapsbm1://geo?ll=${dest.lon},${dest.lat}&z=12`,
       // Add standard score for tier 0 (higher than standard geosearch results)
