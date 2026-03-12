@@ -278,45 +278,73 @@ export class GeosearchService {
     // Если Tier 2 нашёл хорошие результаты, вернуть их без ожидания Tier 3
     // Для коротких запросов (город): если есть результат с score >= 1.5 - достаточно
     // Для длинных запросов (адресы): требуем score >= 2
+    // ИСКЛЮЧЕНИЕ: если русский запрос и все результаты российские - идти в Tier 3
     const isShortQuery = normalized.split(/\s+/).length <= 2;
     const scoreThreshold = isShortQuery ? 1.5 : 2.0;
 
+    const hasRussianResults = scored.some(item =>
+      /(Россия|России|РФ|г\s|ул\s|обл\s|пр-кт|рп\s|пгт|д\s)/i.test(item.displayName)
+    );
+
     if (scored.length > 0 && scored[0].score >= scoreThreshold) {
-      await this.redis.set(cacheKey, JSON.stringify(scored), 60 * 60 * 24 * 7);
-      return this.applyProximity(scored, userLat, userLon);
+      // Если русский запрос и все результаты выглядят как российские адреса -
+      // всё равно идти в Tier 3, чтобы найти иностранные города
+      if (!isRussianQuery || !hasRussianResults || scored.some(item => !/(Россия|России|РФ)/i.test(item.displayName))) {
+        await this.redis.set(cacheKey, JSON.stringify(scored), 60 * 60 * 24 * 7);
+        return this.applyProximity(scored, userLat, userLon);
+      }
     }
 
-    // Tier 3: Photon → Yandex Maps → Yandex Geosuggest → Nominatim EN (каскадный поиск)
+    // Tier 3: для русских запросов - Yandex Geosuggest(en) первым, иначе Photon → Yandex Maps
     let tier3Results: Array<{ displayName: string; uri: string }> = [];
 
-    // Сначала пробуем Photon (быстро, работает везде)
-    const photonResults = await this.getPhotonSuggestions(normalized);
-    if (photonResults && photonResults.length > 0) {
-      tier3Results = photonResults;
-    } else {
-      // Если Photon ничего не нашёл, пробуем Yandex Maps Suggest (хорош для РФ)
+    // Если русский запрос - сначала пробуем Yandex Geosuggest (для иностранных городов типа "Севилья")
+    if (isRussianQuery) {
+      const yandexGeoResults = await this.getYandexGeoSuggest(normalized);
+      if (yandexGeoResults && yandexGeoResults.length > 0) {
+        tier3Results = yandexGeoResults;
+      }
+    }
+
+    // Если Yandex не помог или не русский запрос - пробуем Photon
+    if (tier3Results.length === 0) {
+      const photonResults = await this.getPhotonSuggestions(normalized);
+      if (photonResults && photonResults.length > 0) {
+        tier3Results = photonResults;
+      }
+    }
+
+    // Если ничего не нашли - пробуем Yandex Maps Suggest
+    if (tier3Results.length === 0) {
       const yandexResults = await this.getYandexSuggestions(normalized);
       if (yandexResults && yandexResults.length > 0) {
         tier3Results = yandexResults;
-      } else {
-        // Пробуем Yandex Geosuggest (если API ключ настроен)
-        const yandexGeoResults = await this.getYandexGeoSuggest(normalized);
-        if (yandexGeoResults && yandexGeoResults.length > 0) {
-          tier3Results = yandexGeoResults;
-        } else {
-          // Последний контур: Nominatim с английским языком (находит иностранные города/улицы типо "Севилья")
-          const nominatimEnResults = await this.getNominatimSuggestions(normalized, undefined, 'en,ru', false);
-          if (nominatimEnResults && nominatimEnResults.length > 0) {
-            tier3Results = nominatimEnResults;
-          }
-        }
+      }
+    }
+
+    // Последний контур: Nominatim с английским языком
+    if (tier3Results.length === 0) {
+      const nominatimEnResults = await this.getNominatimSuggestions(normalized, undefined, 'en,ru', false);
+      if (nominatimEnResults && nominatimEnResults.length > 0) {
+        tier3Results = nominatimEnResults;
       }
     }
 
     // Финальный фильтр: если русский запрос, отбросить иностранные страны
+    // НО не отбрасываем города, названия которых звучат похоже на запрос
+    // (например "Севилья" на русском должна найти испанский город Sevilla)
     if (isRussianQuery && tier3Results.length > 0) {
       const foreignCountries = /(ОАЭ|UAE|emirat|दुबई|Dubai|Абу|Abu|Qatar|Катар|Saudi|Саудов|Egypt|Египет|Turkey|Турция|Greece|Греция|Spain|Испан|Italy|Итали|France|Франц|Germany|Герман|Poland|Польш|Ukraine|Украин|Belarus|Белорус|Kazakhstan|Казах|Uzbek|Узбекистан|China|Китай|Japan|Япон|Korea|Кореа|India|Инд|USA|США|Canada|Канад|Mexico|Мекс|Brazil|Бразил|Argentina|Аргент|Australia|Австрал|Israel|Израиль|Иерусалим|Jerusalem)/i;
-      tier3Results = tier3Results.filter(item => !foreignCountries.test(item.displayName));
+
+      tier3Results = tier3Results.filter(item => {
+        // Если нет иностранной страны в результате - оставляем
+        if (!foreignCountries.test(item.displayName)) return true;
+
+        // Если есть иностранная страна, но это город - оставляем
+        // (это может быть желаемый результат, типа "Sevilla, Spain" при поиске "Севилья")
+        const isCity = /(город|town|city|locality|settlement)/i.test(item.displayName);
+        return isCity;
+      });
     }
 
     if (tier3Results.length > 0) {
