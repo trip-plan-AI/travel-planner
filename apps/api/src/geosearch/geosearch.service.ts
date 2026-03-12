@@ -180,14 +180,27 @@ export class GeosearchService {
       }
     }
 
-    // Score сначала — чтобы dedup оставлял наиболее релевантный результат в ячейке
+    // Приоритет тиеров: Tier 0 (БД) > Tier 2 (DaData/Nominatim)
+    // Tier 0 имеет автоматический приоритет через score из БД
     const allScored = [...tier0Items, ...dadataItems, ...nominatimRuItems]
       .map(item => {
         // Tier0 items имеют score из DB; если он невалидный (NaN/null) — пересчитываем
         if ('score' in item && typeof (item as any).score === 'number' && isFinite((item as any).score)) {
           return item as any;
         }
-        return { ...item, score: this.scoreResult(item.displayName, normalized) };
+        // Для Tier 2 результатов: базовый скор + бонус за тип (город > улица)
+        let baseScore = this.scoreResult(item.displayName, normalized);
+
+        // Бонус за тип результата (если это город, а не улица)
+        // Города обычно более релевантны для поиска по названию города
+        const displayNameLower = item.displayName.toLowerCase();
+        if (/(^|[,\s])(город|г\.|г\s|city|town|settlement|посёлок|деревня)(\s|,|$)/i.test(displayNameLower)) {
+          baseScore += 2.0; // Сильный бонус за город
+        } else if (/(улица|ул\.|проспект|пр-кт|переулок|площадь|пл\.|шоссе|street|avenue|road|square)/i.test(displayNameLower)) {
+          baseScore -= 1.0; // Штраф за улицу
+        }
+
+        return { ...item, score: baseScore };
       })
       .sort((a, b) => b.score - a.score);
 
@@ -243,12 +256,18 @@ export class GeosearchService {
       return true;
     }).slice(0, 10);
 
-    if (scored.length > 0 && scored[0].score >= 2) {
+    // Если Tier 2 нашёл хорошие результаты, вернуть их без ожидания Tier 3
+    // Для коротких запросов (город): если есть результат с score >= 1.5 - достаточно
+    // Для длинных запросов (адресы): требуем score >= 2
+    const isShortQuery = normalized.split(/\s+/).length <= 2;
+    const scoreThreshold = isShortQuery ? 1.5 : 2.0;
+
+    if (scored.length > 0 && scored[0].score >= scoreThreshold) {
       await this.redis.set(cacheKey, JSON.stringify(scored), 60 * 60 * 24 * 7);
       return this.applyProximity(scored, userLat, userLon);
     }
 
-    // Tier 3: Photon → Yandex (если Tier 2 ничего не нашёл или score слабый)
+    // Tier 3: Photon → Yandex (если Tier 2 не нашёл достаточно хороших результатов)
     let tier3Results: Array<{ displayName: string; uri: string }> = [];
 
     const photonResults = await this.getPhotonSuggestions(normalized);
