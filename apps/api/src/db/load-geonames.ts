@@ -6,10 +6,12 @@
  */
 
 import * as fs from 'fs';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import { transliterate } from 'transliteration';
 import { OpenAI } from 'openai';
 import * as dotenv from 'dotenv';
+import * as schema from './schema';
 
 dotenv.config({ path: '../../../../.env' });
 
@@ -34,9 +36,18 @@ interface GeoNamesCity {
   modification: string;
 }
 
+const dbUrl = process.env.DATABASE_URL;
+if (!dbUrl) {
+  throw new Error(
+    '❌ DATABASE_URL не установлена! Проверьте корневой .env файл',
+  );
+}
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: dbUrl,
 });
+
+const db = drizzle(pool, { schema });
 
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({
@@ -187,122 +198,112 @@ async function translateCityToRussian(cityName: string): Promise<string> {
 }
 
 async function insertCitiesBatch(cities: GeoNamesCity[]): Promise<void> {
-  const client = await pool.connect();
+  // Страны (простая маппинг для основных стран)
+  const countryTranslations: Record<string, string> = {
+    RU: 'Россия',
+    US: 'США',
+    GB: 'Великобритания',
+    FR: 'Франция',
+    DE: 'Германия',
+    IT: 'Италия',
+    ES: 'Испания',
+    CN: 'Китай',
+    JP: 'Япония',
+    IN: 'Индия',
+    BR: 'Бразилия',
+    MX: 'Мексика',
+    AU: 'Австралия',
+    TR: 'Турция',
+    TH: 'Таиланд',
+    AE: 'ОАЭ',
+    SG: 'Сингапур',
+    KR: 'Южная Корея',
+    KP: 'Северная Корея',
+    VN: 'Вьетнам',
+    PH: 'Филиппины',
+    PK: 'Пакистан',
+    BD: 'Бангладеш',
+    ID: 'Индонезия',
+    MY: 'Малайзия',
+    EG: 'Египет',
+    ZA: 'ЮАР',
+    NG: 'Нигерия',
+    KE: 'Кения',
+    CA: 'Канада',
+    UY: 'Уругвай',
+    AR: 'Аргентина',
+    CL: 'Чили',
+    CO: 'Колумбия',
+    PE: 'Перу',
+    UA: 'Украина',
+    BY: 'Беларусь',
+    PL: 'Польша',
+    CZ: 'Чехия',
+    SK: 'Словакия',
+    AT: 'Австрия',
+    CH: 'Швейцария',
+    SE: 'Швеция',
+    NO: 'Норвегия',
+    DK: 'Дания',
+    FI: 'Финляндия',
+    GR: 'Греция',
+    PT: 'Португалия',
+    NL: 'Нидерланды',
+    BE: 'Бельгия',
+    HU: 'Венгрия',
+    RO: 'Румыния',
+    BG: 'Болгария',
+    RS: 'Сербия',
+    HR: 'Хорватия',
+    IL: 'Израиль',
+    SA: 'Саудовская Аравия',
+    JO: 'Иордания',
+    KZ: 'Казахстан',
+    UZ: 'Узбекистан',
+    TM: 'Туркменистан',
+    KG: 'Киргизия',
+    TJ: 'Таджикистан',
+    AF: 'Афганистан',
+    IR: 'Иран',
+    IQ: 'Ирак',
+    SY: 'Сирия',
+    LB: 'Ливан',
+    NZ: 'Новая Зеландия',
+    FJ: 'Фиджи',
+  };
 
   try {
-    await client.query('BEGIN');
-
+    const valuesToInsert = [];
     for (const city of cities) {
       // Переводим на русский
       const nameRu = await translateCityToRussian(city.name);
 
-      // Транслитерируем (на случай если nameRu кириллица)
+      // Транслитерируем
       const nameTransliterated = transliterate(nameRu);
-
-      // Страны (простая маппинг для основных стран)
-      const countryTranslations: Record<string, string> = {
-        RU: 'Россия',
-        US: 'США',
-        GB: 'Великобритания',
-        FR: 'Франция',
-        DE: 'Германия',
-        IT: 'Италия',
-        ES: 'Испания',
-        CN: 'Китай',
-        JP: 'Япония',
-        IN: 'Индия',
-        BR: 'Бразилия',
-        MX: 'Мексика',
-        AU: 'Австралия',
-        TR: 'Турция',
-        TH: 'Таиланд',
-        AE: 'ОАЭ',
-        SG: 'Сингапур',
-        KR: 'Южная Корея',
-        KP: 'Северная Корея',
-        VN: 'Вьетнам',
-        PH: 'Филиппины',
-        PK: 'Пакистан',
-        BD: 'Бангладеш',
-        ID: 'Индонезия',
-        MY: 'Малайзия',
-        EG: 'Египет',
-        ZA: 'ЮАР',
-        NG: 'Нигерия',
-        KE: 'Кения',
-        CA: 'Канада',
-        UY: 'Уругвай',
-        AR: 'Аргентина',
-        CL: 'Чили',
-        CO: 'Колумбия',
-        PE: 'Перу',
-        UA: 'Украина',
-        BY: 'Беларусь',
-        PL: 'Польша',
-        CZ: 'Чехия',
-        SK: 'Словакия',
-        AT: 'Австрия',
-        CH: 'Швейцария',
-        SE: 'Швеция',
-        NO: 'Норвегия',
-        DK: 'Дания',
-        FI: 'Финляндия',
-        GR: 'Греция',
-        PT: 'Португалия',
-        NL: 'Нидерланды',
-        BE: 'Бельгия',
-        HU: 'Венгрия',
-        RO: 'Румыния',
-        BG: 'Болгария',
-        RS: 'Сербия',
-        HR: 'Хорватия',
-        IL: 'Израиль',
-        SA: 'Саудовская Аравия',
-        JO: 'Иордания',
-        KZ: 'Казахстан',
-        UZ: 'Узбекистан',
-        TM: 'Туркменистан',
-        KG: 'Киргизия',
-        TJ: 'Таджикистан',
-        AF: 'Афганистан',
-        IR: 'Иран',
-        IQ: 'Ирак',
-        SY: 'Сирия',
-        LB: 'Ливан',
-        NZ: 'Новая Зеландия',
-        FJ: 'Фиджи',
-      };
-
       const countryNameRu = countryTranslations[city.countrycode] || '';
 
-      await client.query(
-        `
-        INSERT INTO cities (name, name_ru, name_transliterated, country_code, country_name_ru, latitude, longitude, population, place_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        ON CONFLICT DO NOTHING
-      `,
-        [
-          city.name,
-          nameRu,
-          nameTransliterated,
-          city.countrycode,
-          countryNameRu,
-          city.latitude,
-          city.longitude,
-          city.population || 0,
-          `geonames-${city.geonameid}`,
-        ],
-      );
+      valuesToInsert.push({
+        name: city.name,
+        nameRu,
+        nameTransliterated,
+        countryCode: city.countrycode,
+        countryNameRu,
+        latitude: city.latitude,
+        longitude: city.longitude,
+        population: city.population || 0,
+        placeId: `geonames-${city.geonameid}`,
+      });
     }
 
-    await client.query('COMMIT');
+    // Вставляем через Drizzle (автоматически пропускает дубли)
+    if (valuesToInsert.length > 0) {
+      await db.insert(schema.cities).values(valuesToInsert).onConflictDoNothing();
+    }
+
     console.log(`✅ Вставлено ${cities.length} городов`);
   } catch (error) {
-    await client.query('ROLLBACK');
     console.error('❌ Ошибка вставки:', error);
     throw error;
-  } finally {
-    client.release();
   }
 }
 
@@ -342,7 +343,7 @@ async function main() {
     console.error('❌ Критическая ошибка:', error);
     process.exit(1);
   } finally {
-    await pool.end();
+    await pool.end().catch(console.error);
   }
 }
 
