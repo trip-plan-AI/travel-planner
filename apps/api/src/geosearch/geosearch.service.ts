@@ -277,14 +277,22 @@ export class GeosearchService {
     const isShortQuery = normalized.split(/\s+/).length <= 2;
     const scoreThreshold = isShortQuery ? 1.5 : 2.0;
 
-    const hasRussianResults = scored.some(item =>
-      /(Россия|России|РФ|г\s|ул\s|обл\s|пр-кт|рп\s|пгт|д\s)/i.test(item.displayName)
-    );
+    // Детектор российских адресов: проверяем префиксы (г, ул, пр-кт, пгт и т.д.) или "Россия"
+    const isRussianAddress = (displayName: string): boolean => {
+      // Проверяем наличие признаков российского адреса
+      const hasCountryMarker = /(Россия|России|РФ)/i.test(displayName);
+      const hasAddressMarker = /((^|,\s*)(г\.?|ул\.?|пр-кт|пр\.?|пгт\.?|рп\.?|д\.?|дом)\s+|площадь|пл\.|переулок|шоссе|проспект|авеню)/i.test(displayName);
+      const isCyrillic = /[а-яёА-ЯЁ]/i.test(displayName);
+
+      return (hasCountryMarker || hasAddressMarker) && isCyrillic;
+    };
+
+    const allResultsAreRussianAddresses = scored.length > 0 && scored.every(item => isRussianAddress(item.displayName));
 
     if (scored.length > 0 && scored[0].score >= scoreThreshold) {
-      // Если русский запрос и все результаты выглядят как российские адреса -
-      // всё равно идти в Tier 3, чтобы найти иностранные города
-      if (!isRussianQuery || !hasRussianResults || scored.some(item => !/(Россия|России|РФ)/i.test(item.displayName))) {
+      // Если русский запрос и ВСЕ результаты - российские адреса/улицы -
+      // идти в Tier 3, чтобы найти иностранные города (типа "Лондон", "Париж", "Барселона")
+      if (!isRussianQuery || !allResultsAreRussianAddresses) {
         await this.redis.set(cacheKey, JSON.stringify(scored), 60 * 60 * 24 * 7);
         return this.applyProximity(scored, userLat, userLon);
       }
